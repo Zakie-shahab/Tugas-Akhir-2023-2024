@@ -195,46 +195,46 @@ def nextmove(lastmove, arena, arenamove, xpos, ypos):
 def lookfront(lastaction):
     global arena, ypos, xpos
     if (lastaction == 0):
-        return arena[ypos-1][xpos]
+        return arena[ypos-1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 1):
-        return arena[ypos][xpos+1]
+        return arena[ypos][xpos+1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 2):
-        return arena[ypos+1][xpos]
+        return arena[ypos+1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 3):
-        return arena[ypos][xpos-1]
+        return arena[ypos][xpos-1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     
 def lookright(lastaction):
     global arena, ypos, xpos
     if (lastaction == 0):
-        return arena[ypos][xpos+1]
+        return arena[ypos][xpos+1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 1):
-        return arena[ypos+1][xpos]
+        return arena[ypos+1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 2):
-        return arena[ypos][xpos-1]
+        return arena[ypos][xpos-1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 3):
-        return arena[ypos-1][xpos]
+        return arena[ypos-1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     
 def lookleft(lastaction):
     global arena, ypos, xpos
     if (lastaction == 0):
-        return arena[ypos][xpos-1]
+        return arena[ypos][xpos-1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 1):
-        return arena[ypos-1][xpos]
+        return arena[ypos-1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 2):
-        return arena[ypos][xpos+1]
+        return arena[ypos][xpos+1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 3):
-        return arena[ypos+1][xpos]
+        return arena[ypos+1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     
 def lookbehind(lastaction):
     global arena, ypos, xpos    
     if (lastaction == 0):
-        return arena[ypos+1][xpos]
+        return arena[ypos+1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 1):
-        return arena[ypos][xpos-1]
+        return arena[ypos][xpos-1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 2):
-        return arena[ypos-1][xpos]
+        return arena[ypos-1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
     if (lastaction == 3):
-        return arena[ypos][xpos+1]
+        return arena[ypos][xpos+1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
 
 # Cek sekitar
 def checkaround(movepart, lastaction):
@@ -300,21 +300,25 @@ while True:
     action = nextmove(lastaction, arena, arenamove, xpos, ypos)
     if (action == 0):
         arenamove[ypos][xpos][action] = 1
+        # di line ini kasih fungsi bergerak
         ypos -= 1
         arena[ypos][xpos] = 1
         arenamove[ypos][xpos][movepair[action]] = 1
     elif (action == 1):
         arenamove[ypos][xpos][action] = 1
+        # di line ini kasih fungsi bergerak
         xpos += 1
         arena[ypos][xpos] = 1
         arenamove[ypos][xpos][movepair[action]] = 1
     elif (action == 2):
         arenamove[ypos][xpos][action] = 1
+        # di line ini kasih fungsi bergerak
         ypos += 1
         arena[ypos][xpos] = 1
         arenamove[ypos][xpos][movepair[action]] = 1
     elif (action == 3):
         arenamove[ypos][xpos][action] = 1
+        # di line ini kasih fungsi bergerak
         xpos -= 1
         arena[ypos][xpos] = 1
         arenamove[ypos][xpos][movepair[action]] = 1
@@ -326,21 +330,25 @@ while True:
             for i in backtrack:
                 if (i == 0):
                     arenamove[ypos][xpos][i] = 1
+                    # di line ini kasih fungsi bergerak
                     ypos -= 1
                     arena[ypos][xpos] = 1
                     arenamove[ypos][xpos][movepair[i]] = 1
                 elif (i == 1):
                     arenamove[ypos][xpos][i] = 1
+                    # di line ini kasih fungsi bergerak
                     xpos += 1
                     arena[ypos][xpos] = 1
                     arenamove[ypos][xpos][movepair[i]] = 1
                 elif (i == 2):
                     arenamove[ypos][xpos][i] = 1
+                    # di line ini kasih fungsi bergerak
                     ypos += 1
                     arena[ypos][xpos] = 1
                     arenamove[ypos][xpos][movepair[i]] = 1
                 else:
                     arenamove[ypos][xpos][i] = 1
+                    # di line ini kasih fungsi bergerak
                     xpos -= 1
                     arena[ypos][xpos] = 1
                     arenamove[ypos][xpos][movepair[i]] = 1
