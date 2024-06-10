@@ -1,13 +1,15 @@
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import random
 
 # Arena Assignment
 arenamove = [[[0 for i in range(4)] for j in range(30)] for k in range(18)]
 arena = [[0 for i in range(30)] for j in range(18)]
 movepair = [2, 3, 0, 1]
-xpos = 0
-ypos = 0
+startx = 0
+starty = 0
+xpos = startx
+ypos = starty
 arena[ypos][xpos] = 1
 lastaction = 1
 for i in range(18):
@@ -21,6 +23,102 @@ for i in range(18):
         if (j == 29):
             arenamove[i][j][1] = 6
 
+# Kembali ke posisi awal
+def gotostart(arenamove, xpos, ypos, destx, desty):
+    # Hyperparameter dan Q Table
+    Qtable = [[0 for i in range(4)] for i in range(540)]
+    learningrate = 0.1
+    discountrate = 1.0
+    explorationrate = 0.1
+    episode = 300
+    maxstep = 600
+    movement = [0, 1, 2, 3]
+    doit = False
+    rpe = []
+    # spe = []
+    
+    # Training
+    for i in range(episode):
+        state = xpos + 30*ypos
+        newypos = ypos
+        newxpos = xpos
+        reward = -1
+        total_reward = 0
+        total_step = 0
+        
+        while True:
+            # Eksplorasi dan eksploitasi
+            if (random.uniform(0, 1) < explorationrate):
+                myaction = random.choice(movement)
+            else:
+                myaction = np.argmax(Qtable[state])
+            
+            # Mengubah posisi state
+            if (arenamove[newypos][newxpos][myaction] == 1 or arenamove[newypos][newxpos][myaction] == 0):  
+                if (myaction == 0):
+                    newypos -= 1
+                elif (myaction == 1):
+                    newxpos += 1
+                elif (myaction == 2):
+                    newypos += 1
+                else:
+                    newxpos -= 1  
+            else:
+                reward -= 10
+
+            # Update Q table
+            newstate = newxpos + 30*newypos
+            if (newxpos == destx and newypos == desty):
+                reward += 10
+            oldvalue = Qtable[state][myaction]
+            nextvalue = max(Qtable[newstate])
+            newvalue = (1-learningrate)*oldvalue + learningrate*(reward + discountrate*nextvalue)
+            Qtable[state][myaction] = newvalue
+            state = newstate
+            
+            total_reward += reward
+            total_step += 1
+            
+            # Tujuan tercapai atau meencapai maxstep
+            if ((newxpos == destx and newypos == desty) or total_step == maxstep):
+                break
+        rpe.append(total_reward)
+        # spe.append(total_step)
+        
+    # grafik jumlah reward
+    plt.title("cumulative reward per episode")
+    plt.xlabel("Episode")
+    plt.ylabel("cumulative reward")
+    plt.plot(rpe)
+    plt.show()
+
+    # # grafik jumlah tindakan
+    # plt.title("# steps per episode")
+    # plt.xlabel("Episode")
+    # plt.ylabel("# steps")
+    # plt.plot(spe)
+    # plt.show()    
+        
+    # Eksploitasi untuk mengeluarkan output pergerakan backtracking
+    changexpos = xpos
+    changeypos = ypos
+    outputmovement = []
+    while (not doit):
+        statenow = changexpos + 30*changeypos
+        goaction = np.argmax(Qtable[statenow])
+        if (goaction == 0):
+            changeypos -= 1
+        elif (goaction == 1):
+            changexpos += 1
+        elif (goaction == 2):
+            changeypos += 1
+        elif (goaction == 3):
+            changexpos -= 1
+        outputmovement.append(goaction)
+        if (changexpos == destx and changeypos == desty):
+            doit = True
+    return(outputmovement)
+
 # Reinforcement Learning
 def searchzero(arena, arenamove, xpos, ypos):
     # Hyperparameter dan Q Table
@@ -32,7 +130,7 @@ def searchzero(arena, arenamove, xpos, ypos):
     maxstep = 300
     movement = [0, 1, 2, 3]
     doit = False
-    # rpe = []
+    rpe = []
     # spe = []
     
     # Training
@@ -41,7 +139,7 @@ def searchzero(arena, arenamove, xpos, ypos):
         newypos = ypos
         newxpos = xpos
         reward = -1
-        #total_reward = 0
+        total_reward = 0
         total_step = 0
         
         while True:
@@ -74,21 +172,21 @@ def searchzero(arena, arenamove, xpos, ypos):
             Qtable[state][myaction] = newvalue
             state = newstate
             
-            #total_reward += reward
+            total_reward += reward
             total_step += 1
             
             # Tujuan tercapai atau meencapai maxstep
             if (arena[newypos][newxpos] == 0 or total_step == maxstep):
                 break
-        #rpe.append(total_reward)
+        rpe.append(total_reward)
         # spe.append(total_step)
         
     # grafik jumlah reward
-    # plt.title("cumulative reward per episode")
-    # plt.xlabel("Episode")
-    # plt.ylabel("cumulative reward")
-    # plt.plot(rpe)
-    # plt.show()
+    plt.title("cumulative reward per episode")
+    plt.xlabel("Episode")
+    plt.ylabel("cumulative reward")
+    plt.plot(rpe)
+    plt.show()
 
     # # grafik jumlah tindakan
     # plt.title("# steps per episode")
@@ -195,46 +293,46 @@ def nextmove(lastmove, arena, arenamove, xpos, ypos):
 def lookfront(lastaction):
     global arena, ypos, xpos
     if (lastaction == 0):
-        return arena[ypos-1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos-1][xpos]
     if (lastaction == 1):
-        return arena[ypos][xpos+1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos][xpos+1]
     if (lastaction == 2):
-        return arena[ypos+1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos+1][xpos]
     if (lastaction == 3):
-        return arena[ypos][xpos-1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos][xpos-1]
     
 def lookright(lastaction):
     global arena, ypos, xpos
     if (lastaction == 0):
-        return arena[ypos][xpos+1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos][xpos+1]
     if (lastaction == 1):
-        return arena[ypos+1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos+1][xpos]
     if (lastaction == 2):
-        return arena[ypos][xpos-1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos][xpos-1]
     if (lastaction == 3):
-        return arena[ypos-1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos-1][xpos]
     
 def lookleft(lastaction):
     global arena, ypos, xpos
     if (lastaction == 0):
-        return arena[ypos][xpos-1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos][xpos-1]
     if (lastaction == 1):
-        return arena[ypos-1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos-1][xpos]
     if (lastaction == 2):
-        return arena[ypos][xpos+1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos][xpos+1]
     if (lastaction == 3):
-        return arena[ypos+1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos+1][xpos]
     
 def lookbehind(lastaction):
     global arena, ypos, xpos    
     if (lastaction == 0):
-        return arena[ypos+1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos+1][xpos]
     if (lastaction == 1):
-        return arena[ypos][xpos-1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos][xpos-1]
     if (lastaction == 2):
-        return arena[ypos-1][xpos] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos-1][xpos]
     if (lastaction == 3):
-        return arena[ypos][xpos+1] # return jadi 6 kalo obstacle, 0 kalo gaada apa2
+        return arena[ypos][xpos+1]
 
 # Cek sekitar
 def checkaround(movepart, lastaction):
@@ -276,49 +374,65 @@ def checkaround(movepart, lastaction):
             movepart[3] = lookfront(lastaction)
 
 # Dummy Arena
-arena = [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0],
-         [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 6]]
+# arena = [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]]
+
+# arena = [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 
 # Bergerak
+step_num = 0
 while True:
     action = nextmove(lastaction, arena, arenamove, xpos, ypos)
     if (action == 0):
         arenamove[ypos][xpos][action] = 1
-        # di line ini kasih fungsi bergerak
         ypos -= 1
         arena[ypos][xpos] = 1
         arenamove[ypos][xpos][movepair[action]] = 1
     elif (action == 1):
         arenamove[ypos][xpos][action] = 1
-        # di line ini kasih fungsi bergerak
         xpos += 1
         arena[ypos][xpos] = 1
         arenamove[ypos][xpos][movepair[action]] = 1
     elif (action == 2):
         arenamove[ypos][xpos][action] = 1
-        # di line ini kasih fungsi bergerak
         ypos += 1
         arena[ypos][xpos] = 1
         arenamove[ypos][xpos][movepair[action]] = 1
     elif (action == 3):
         arenamove[ypos][xpos][action] = 1
-        # di line ini kasih fungsi bergerak
         xpos -= 1
         arena[ypos][xpos] = 1
         arenamove[ypos][xpos][movepair[action]] = 1
@@ -330,25 +444,21 @@ while True:
             for i in backtrack:
                 if (i == 0):
                     arenamove[ypos][xpos][i] = 1
-                    # di line ini kasih fungsi bergerak
                     ypos -= 1
                     arena[ypos][xpos] = 1
                     arenamove[ypos][xpos][movepair[i]] = 1
                 elif (i == 1):
                     arenamove[ypos][xpos][i] = 1
-                    # di line ini kasih fungsi bergerak
                     xpos += 1
                     arena[ypos][xpos] = 1
                     arenamove[ypos][xpos][movepair[i]] = 1
                 elif (i == 2):
                     arenamove[ypos][xpos][i] = 1
-                    # di line ini kasih fungsi bergerak
                     ypos += 1
                     arena[ypos][xpos] = 1
                     arenamove[ypos][xpos][movepair[i]] = 1
                 else:
                     arenamove[ypos][xpos][i] = 1
-                    # di line ini kasih fungsi bergerak
                     xpos -= 1
                     arena[ypos][xpos] = 1
                     arenamove[ypos][xpos][movepair[i]] = 1
@@ -356,5 +466,31 @@ while True:
                 action = i
     lastaction = action
     checkaround(arenamove[ypos][xpos], lastaction)
+    step_num += 1
+
+for i in gotostart(arenamove, xpos, ypos, startx, starty):
+    if (i == 0):
+        arenamove[ypos][xpos][i] = 1
+        ypos -= 1
+        arena[ypos][xpos] = 1
+        arenamove[ypos][xpos][movepair[i]] = 1
+    elif (i == 1):
+        arenamove[ypos][xpos][i] = 1
+        xpos += 1
+        arena[ypos][xpos] = 1
+        arenamove[ypos][xpos][movepair[i]] = 1
+    elif (i == 2):
+        arenamove[ypos][xpos][i] = 1
+        ypos += 1
+        arena[ypos][xpos] = 1
+        arenamove[ypos][xpos][movepair[i]] = 1
+    else:
+        arenamove[ypos][xpos][i] = 1
+        xpos -= 1
+        arena[ypos][xpos] = 1
+        arenamove[ypos][xpos][movepair[i]] = 1
+    step_num += 1
+
 for i in arena:
     print(i)
+print(step_num)
